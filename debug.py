@@ -25,8 +25,8 @@ class agentFunction:
         if (location not in self.orderShelfLocations):
             self.orderShelfLocations.append(location)
         
-    def getNextShelfLocation(self):
-        return self.orderShelfLocations.pop(0)
+    def removeShelfLocation(self):
+        self.orderShelfLocations.pop(0)
     
     def getCurrentShelfLocation(self):
         return self.currentShelf
@@ -46,6 +46,7 @@ class agentFunction:
         #is agent on top of a Shelf?
         if (self.percept.onOrderShelf()):
             self.actuator.collectItem()
+            self.removeShelfLocation()
             self.currentShelf = ""
         print("shelf count: " + str(self.percept.shelfCount(self.basket.getCoords())))
         
@@ -69,7 +70,7 @@ class agentFunction:
                 #Load shelf from list of shelves that need to be visited
                 else:
                     print("Previous Order Shelf Locations: " +  str(self.orderShelfLocations))
-                    self.setCurrentShelfLocation(self.getNextShelfLocation())
+                    self.setCurrentShelfLocation(self.orderShelfLocations[0])
                     
                     print("Moving Towards: " + str(self.currentShelf))
                     print("Order Shelf Locations: " +  str(self.orderShelfLocations))
@@ -83,12 +84,19 @@ class agentFunction:
             
             print("Previous Order Shelf Locations: " +  str(self.orderShelfLocations))    
             #add cooordinates to list of shelves that need to be visited
+            
             for i in shelfLocations:
-                self.addShelfLocation(i)
+                c = 0 
+                for j in self.orderShelfLocations:
+                    if (i[0] == j[0] and i[1] == j[1]):
+                            c = c-1
+                    c = c + 1
+                if (c == len(self.orderShelfLocations)):
+                    self.addShelfLocation(i)
                 
             
             #Set next shelf that needs to be visited
-            self.currentShelf = self.getNextShelfLocation()
+            self.currentShelf = self.orderShelfLocations[0]
             
             print("Order Shelf Locations: " +  str(self.orderShelfLocations))
             
@@ -256,34 +264,37 @@ class actuator:
         self.rand = rand
         
     def collectItem(self):
-        if (self.env[self.coord[0]][self.coord[1]] != ''):
-            if (self.env[self.coord[0]][self.coord[1]] not in self.basket.getBasket()):
-                self.basket.addToBasket(self.env[self.coord[0]][self.coord[1]])
-                self.basket.addCoords(self.coord)
-                print("Collected Item: " + str(self.env[self.coord[0]][self.coord[1]]) + " Basket: " + str(self.basket.getBasket()))
+        self.coord = self.percept.getCurrentLocation()
+        item = self.coord.copy()
+        if (self.env[item[0]][item[1]] != ''):
+            if (self.env[item[0]][item[1]] not in self.basket.getBasket()):
+                self.basket.addToBasket(self.env[item[0]][item[1]])
+                self.basket.addCoords(item)
+                print("Collected Item: " + str(self.env[item[0]][item[1]]) + " Basket: " + str(self.basket.getBasket()))
     def move(self,nextShelf):
         potentialMoves = []
+        self.coord = self.percept.getCurrentLocation()
         print("Shelf We are Trying to Approach: " + str(nextShelf))
         print("Current Coords: " + str(self.coord))
         if(nextShelf[1] < self.coord[1]):
-            left = self.coord
+            left = self.coord.copy()
             left[1] = left[1]-1
             potentialMoves.append(left)
         if(nextShelf[1] > self.coord[1]):
-            right = self.coord
+            right = self.coord.copy()
             right[1] = right[1]+1
             potentialMoves.append(right)
         if(nextShelf[0] < self.coord[0]):
-            up = self.coord
+            up = self.coord.copy()
             up[0] = up[0]-1
             potentialMoves.append(up)
         if(nextShelf[0] > self.coord[0]):
-            down = self.coord
+            down = self.coord.copy()
             down[0] = down[0]+1
             potentialMoves.append(down)
         notVisited = []
         for i in potentialMoves:
-            if (not self.moveMem.hasVisited(i)):
+            if (not self.moveMem.hasVisited(str(i))):
                 notVisited.append(i)
         print("Potential Moves Not Visited Yet" + str(notVisited))        
         print("Potential Moves Added: " + str(potentialMoves))
@@ -303,22 +314,26 @@ class actuator:
         
         
     def left(self):
-        left = self.coord
+        self.coord = self.percept.getCurrentLocation()
+        left = self.coord.copy()
         left[1] = left[1]-1
         self.percept.setCurrentLocation(left)
         self.addVisitedSpace(left)
     def right(self):
-        right = self.coord
+        self.coord = self.percept.getCurrentLocation()
+        right = self.coord.copy()
         right[1] = right[1]+1
         self.percept.setCurrentLocation(right)
         self.addVisitedSpace(right)
     def up(self):
-        up = self.coord
+        self.coord = self.percept.getCurrentLocation()
+        up = self.coord.copy()
         up[0] = up[0]-1
         self.percept.setCurrentLocation(up)
         self.addVisitedSpace(up)
     def down(self):
-        down = self.coord
+        self.coord = self.percept.getCurrentLocation()
+        down = self.coord.copy()
         down[0] = down[0]+1
         self.percept.setCurrentLocation(down)
         self.addVisitedSpace(down)
@@ -333,7 +348,7 @@ class actuator:
             return False
         if move == 'up' and self.coord[0] ==0:
             return False
-        if move == 'down' and self.coord[1] ==5:
+        if move == 'down' and self.coord[0] ==5:
             return False
         return True
 
@@ -540,8 +555,7 @@ def main():
         agent.determineAction()
         prcpt.determine()
         count = count + 1
-        if (count > 36):
-            print(hello)
+        
        
     
     
