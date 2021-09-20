@@ -10,18 +10,20 @@ class agentFunction:
     
     
     
-    def __init__(self, agentLocation, percept, customerOrder,actuator,randRange):
+    def __init__(self, agentLocation, percept, customerOrder,actuator,randRange,basket):
         self.location = agentLocation
         self.percept = percept
         self.order = customerOrder
         self.orderShelfLocations = []
         self.actuator = actuator
         self.random = randRange
+        self.basket = basket
         #need to collect and check if an item has already been collected
         
     
     def addShelfLocation(self,location):
-        self.orderShelfLocations.append(location)
+        if (location not in self.orderShelfLocations):
+            self.orderShelfLocations.append(location)
         
     def getNextShelfLocation(self):
         return self.orderShelfLocations.pop(0)
@@ -45,10 +47,10 @@ class agentFunction:
         if (self.percept.onOrderShelf()):
             self.actuator.collectItem()
             self.currentShelf = ""
-        print("shelf count: " + str(self.percept.shelfCount()))
+        print("shelf count: " + str(self.percept.shelfCount(self.basket.getCoords())))
         
         #Are there any shelves around me?
-        if (self.percept.shelfCount() == 0):
+        if (self.percept.shelfCount(self.basket.getCoords()) == 0):
             
             #Have I detected any shelves in the past that I have not collected from?
             if (len(self.orderShelfLocations) == 0):
@@ -74,10 +76,10 @@ class agentFunction:
                     self.actuator.move(self.currentShelf)
                     
         #One or more shelves are around the agent
-        elif (self.percept.shelfCount() >= 1):
-            print("Shelf Count Detected: " + str(self.percept.shelfCount()))
+        elif (self.percept.shelfCount(self.basket.getCoords()) >= 1):
+            print("Shelf Count Detected: " + str(self.percept.shelfCount(self.basket.getCoords())))
             #get the shelf Coodinates
-            shelfLocations = self.percept.getShelfLocations()
+            shelfLocations = self.percept.getShelfLocations(self.basket.getCoords())
             
             print("Previous Order Shelf Locations: " +  str(self.orderShelfLocations))    
             #add cooordinates to list of shelves that need to be visited
@@ -121,7 +123,8 @@ class agentFunction:
         
     #returns true if customer order is complete
     def hasCollectedAllItems(self):
-        if (len(self.order) == len(self.actuator.collected)):
+        if (len(self.order) == len(self.basket.getBasket())):
+            print("WIN!: " + str(self.basket.getBasket()))
             return True
         return False
  
@@ -254,11 +257,14 @@ class actuator:
         
     def collectItem(self):
         if (self.env[self.coord[0]][self.coord[1]] != ''):
-            self.basket.addToBasket(self.env[self.coord[0]][self.coord[1]])
-            print("Collected Item: " + str(self.env[self.coord[0]][self.coord[1]]) + " Basket: " + str(self.basket.getBasket()))
+            if (self.env[self.coord[0]][self.coord[1]] not in self.basket.getBasket()):
+                self.basket.addToBasket(self.env[self.coord[0]][self.coord[1]])
+                self.basket.addCoords(self.coord)
+                print("Collected Item: " + str(self.env[self.coord[0]][self.coord[1]]) + " Basket: " + str(self.basket.getBasket()))
     def move(self,nextShelf):
         potentialMoves = []
         print("Shelf We are Trying to Approach: " + str(nextShelf))
+        print("Current Coords: " + str(self.coord))
         if(nextShelf[1] < self.coord[1]):
             left = self.coord
             left[1] = left[1]-1
@@ -282,9 +288,9 @@ class actuator:
         print("Potential Moves Not Visited Yet" + str(notVisited))        
         print("Potential Moves Added: " + str(potentialMoves))
         if (len(notVisited) == 0):
-            move = potentialMoves[self.rand.randint(0,1)]
+            move = potentialMoves[self.rand.randint(0,(len(potentialMoves)-1))]
             self.percept.setCurrentLocation(move)
-        if (len(notVisited) == 2):
+        elif (len(notVisited) == 2):
             self.percept.setCurrentLocation(notVisited[self.rand.randint(0,1)])
             self.addVisitedSpace(notVisited[0])
             self.addVisitedSpace(notVisited[1])
@@ -293,6 +299,7 @@ class actuator:
             self.addVisitedSpace(notVisited[0])
         else:
             print("Error: more than two moves")
+            
         
         
     def left(self):
@@ -377,19 +384,21 @@ class percept:
             return True;
         return False
     
-    def shelfCount(self):
+    def shelfCount(self, basket):
         count = 0
         for i in self.percepts:
             if self.percepts[i]["value"] == 3:
                 if (i != 'current'):
-                    count = count + 1
+                    if ((self.percepts[i]["coord"] not in basket)):
+                        count = count + 1
         return count
         
-    def getShelfLocations(self):
+    def getShelfLocations(self, basket):
         shelves = []
         for i in self.percepts:
             if self.percepts[i]["value"] == 3:
-                shelves.append(self.percepts[i]["coord"])
+                if (self.percepts[i]["coord"] not in basket):
+                    shelves.append(self.percepts[i]["coord"])
         return shelves
         
     def getPercepts(self):
@@ -461,11 +470,19 @@ class stats:
 class basket:
     def __init__(self):
         self.basket = []
+        self.coords = []
+        
     def addToBasket(self,item):
         self.basket.append(item)
         
     def getBasket(self):
         return self.basket
+    
+    def addCoords(self,item):
+        self.coords.append(item)
+        
+    def getCoords(self):
+        return self.coords
 
 #Tracks already visited locations    
 class movementMemory:
@@ -498,7 +515,7 @@ def main():
     prcpt = percept(agentLocation,warehouse)
     
     #determine surrounding tiles
-    determine = prcpt.determine()
+    prcpt.determine()
     
     #Roll for sensor Accuracy
     snsr = sensor(rand, agentLocation, prcpt)
@@ -514,39 +531,19 @@ def main():
     act = actuator(prcpt,currentCollected,shelfLocations,moveMem,rand)
     
     #initiate agent
-    agent = agentFunction(agentLocation, prcpt, ordered_items,act,rand)
-    print("Current Location: " + str(prcpt.getCurrentLocation()))
+    agent = agentFunction(agentLocation, prcpt, ordered_items,act,rand,currentCollected)
+    count = 0
+    while(not agent.hasCollectedAllItems()): 
+        print("Current Location: " + str(prcpt.getCurrentLocation()))
+        env.print_grid(warehouse,ordered_items)
+        print(shelfLocations)
+        agent.determineAction()
+        prcpt.determine()
+        count = count + 1
+        if (count > 36):
+            print(hello)
+       
     
-    #perform actions
-    agent.determineAction()
-    determine = prcpt.determine()
-    #while(!agent.hasCollectedAllItems()) {
-    print("Current Location: " + str(prcpt.getCurrentLocation()))
-    agent.determineAction()
-    determine = prcpt.determine()
-    print("Current Location: " + str(prcpt.getCurrentLocation()))
-    agent.determineAction()
-    determine = prcpt.determine()
-    print("Current Location: " + str(prcpt.getCurrentLocation()))
-    agent.determineAction()
-    determine = prcpt.determine()
-    print("Current Location: " + str(prcpt.getCurrentLocation()))
-    agent.determineAction()
-    determine = prcpt.determine()
-    print("Current Location: " + str(prcpt.getCurrentLocation()))
-    agent.determineAction()
-    determine = prcpt.determine()
-    print("Current Location: " + str(prcpt.getCurrentLocation()))
-    agent.determineAction()
-    determine = prcpt.determine()
-    print("Current Location: " + str(prcpt.getCurrentLocation()))
-    agent.determineAction()
-    determine = prcpt.determine()
-    print("Current Location: " + str(prcpt.getCurrentLocation()))
-    agent.determineAction()
-    determine = prcpt.determine()
-    print("Current Location: " + str(prcpt.getCurrentLocation()))
-    #}
     
 if __name__ == "__main__":
     main()
