@@ -529,15 +529,28 @@ class sensor:
  
 #collects score of one episode            
 class stats:
-    def __init__(self, percept):
+    def __init__(self, env, percept):
+        self.env = env
         self.percept = percept
         self.score = 0
+        self.path = []
         
     def updateScore(self):
-        self.score = self.score + self.percept["current"]["value"]
+        location = self.percept.getCurrentLocation()
+        value = self.env[location[0]][location[1]]
+        self.score = self.score + value
         
     def getScore(self):
         return self.score
+    
+    def printScore(self):
+        print("Score: " + str(self.score))
+        
+    def updatePath(self,coord):
+        self.path.append(coord)
+        
+    def getPath(self):
+        return self.path
 
 #stores collected items
 class basket:
@@ -589,6 +602,9 @@ def main():
     
     #determine surrounding tiles
     prcpt.determine()
+    score = stats(warehouse,prcpt)
+    score.updateScore()
+    score.updatePath(agentLocation)
     
     #Roll for sensor Accuracy
     snsr = sensor(rand, agentLocation, prcpt)
@@ -600,21 +616,23 @@ def main():
     #initiate new movement memory
     moveMem = movementMemory()
     
+    moveMem.addVisited(agentLocation)
+    
     #initiate acutuator
     act = actuator(prcpt,currentCollected,shelfLocations,moveMem,rand)
     
     #initiate agent
     agent = agentFunction(agentLocation, prcpt, ordered_items,act,rand,currentCollected,moveMem)
-    count = 0
     #need to purge fake list of visited when they visit the space
     while(not agent.hasCollectedAllItems()): 
-        print("Current Location: " + str(prcpt.getCurrentLocation()))
-        env.print_grid(warehouse,ordered_items)
-        print(shelfLocations)
         agent.determineAction()
         prcpt.determine()
+        score.updateScore()
+        score.updatePath(prcpt.getCurrentLocation().copy())
         snsr.sensorRoll()
-        count = count + 1
+    
+    score.printScore()
+    print(score.getPath())
         
        
     
