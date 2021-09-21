@@ -26,7 +26,7 @@ class agentFunction:
         if (location not in self.orderShelfLocations):
             self.orderShelfLocations.append(location)
         
-    def removeShelfLocation(self,location):
+    def removeShelfLocation(self,location,fake):
         loc = location.copy()
         c = 0
         d = -1
@@ -36,6 +36,11 @@ class agentFunction:
             c = c + 1
         if (d != -1):
             self.orderShelfLocations.pop(d)
+            if (fake):
+                return True
+            
+        return False
+            
     
     def getCurrentShelfLocation(self):
         return self.currentShelf
@@ -47,7 +52,7 @@ class agentFunction:
     def determineIfOnFakeShelf(self):
         location = self.percept.getCurrentLocation()
         if (self.percept.percepts['current']['value'] == -1):
-            self.removeShelfLocation(location)
+            return self.removeShelfLocation(location,True)
 
     #Loads percepts and decides where to move
     
@@ -58,11 +63,11 @@ class agentFunction:
         #is agent on top of a Shelf?
         if (self.percept.onOrderShelf()):
             self.actuator.collectItem()
-            self.removeShelfLocation(self.percept.getCurrentLocation())
+            self.removeShelfLocation(self.percept.getCurrentLocation(), False)
             self.currentShelf = ""
         print("shelf count: " + str(self.percept.shelfCount(self.basket.getCoords())))
         
-        self.determineIfOnFakeShelf()
+        fake = self.determineIfOnFakeShelf()
         #Are there any shelves around me?
         if (self.percept.shelfCount(self.basket.getCoords()) == 0):
             
@@ -76,6 +81,8 @@ class agentFunction:
                 
                 #Is there a current shelf I am targeting?
                 if (self.currentShelf != ""):
+                    if (fake):
+                        self.currentShelf = self.orderShelfLocations[0]
                     print("Moving Towards: " + str(self.currentShelf))
                     print("Order Shelf Locations: " +  str(self.orderShelfLocations))
                     self.actuator.move(self.currentShelf)
