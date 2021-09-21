@@ -58,14 +58,14 @@ class agentFunction:
     
     #Questions: How do I keep track of shelves already collected items from?
     def determineAction(self):
-        print("onOrderShelf: " + str(self.percept.onOrderShelf()))
+        
         
         #is agent on top of a Shelf?
         if (self.percept.onOrderShelf()):
             self.actuator.collectItem()
             self.removeShelfLocation(self.percept.getCurrentLocation(), False)
             self.currentShelf = ""
-        print("shelf count: " + str(self.percept.shelfCount(self.basket.getCoords())))
+        
         
         fake = self.determineIfOnFakeShelf()
         #Are there any shelves around me?
@@ -75,7 +75,7 @@ class agentFunction:
             if (len(self.orderShelfLocations) == 0):
                 
                 #Random move
-                print("Random Move")
+                
                 self.bestMove(self.percept.getCurrentLocation())
             else:
                 
@@ -83,26 +83,19 @@ class agentFunction:
                 if (self.currentShelf != ""):
                     if (fake):
                         self.currentShelf = self.orderShelfLocations[0]
-                    print("Moving Towards: " + str(self.currentShelf))
-                    print("Order Shelf Locations: " +  str(self.orderShelfLocations))
                     self.actuator.move(self.currentShelf)
                     
                 #Load shelf from list of shelves that need to be visited
                 else:
-                    print("Previous Order Shelf Locations: " +  str(self.orderShelfLocations))
                     self.setCurrentShelfLocation(self.orderShelfLocations[0])
                     
-                    print("Moving Towards: " + str(self.currentShelf))
-                    print("Order Shelf Locations: " +  str(self.orderShelfLocations))
                     self.actuator.move(self.currentShelf)
                     
         #One or more shelves are around the agent
         elif (self.percept.shelfCount(self.basket.getCoords()) >= 1):
-            print("Shelf Count Detected: " + str(self.percept.shelfCount(self.basket.getCoords())))
             #get the shelf Coodinates
             shelfLocations = self.percept.getShelfLocations(self.basket.getCoords())
             
-            print("Previous Order Shelf Locations: " +  str(self.orderShelfLocations))    
             #add cooordinates to list of shelves that need to be visited
             
             for i in shelfLocations:
@@ -118,9 +111,6 @@ class agentFunction:
             #Set next shelf that needs to be visited
             self.currentShelf = self.orderShelfLocations[0]
             
-            print("Order Shelf Locations: " +  str(self.orderShelfLocations))
-            
-            print("Moving Towards: " + str(self.currentShelf))
             #move to that shelf
             self.actuator.move(self.currentShelf)
             
@@ -130,7 +120,6 @@ class agentFunction:
         #add a best move function, determines if there are unvisited options and if not pick random
         while not success:
             move = self.random.randint(0,3)
-            print(self.actuator.movePossible('left'))
             if (move == 0):
                 if (self.actuator.movePossible('left')):
                     self.actuator.left()
@@ -327,12 +316,9 @@ class actuator:
             if (self.env[item[0]][item[1]] not in self.basket.getBasket()):
                 self.basket.addToBasket(self.env[item[0]][item[1]])
                 self.basket.addCoords(item)
-                print("Collected Item: " + str(self.env[item[0]][item[1]]) + " Basket: " + str(self.basket.getBasket()))
     def move(self,nextShelf):
         potentialMoves = []
         self.coord = self.percept.getCurrentLocation()
-        print("Shelf We are Trying to Approach: " + str(nextShelf))
-        print("Current Coords: " + str(self.coord))
         if(nextShelf[1] < self.coord[1]):
             left = self.coord.copy()
             left[1] = left[1]-1
@@ -353,8 +339,6 @@ class actuator:
         for i in potentialMoves:
             if (not self.moveMem.hasVisited(str(i))):
                 notVisited.append(i)
-        print("Potential Moves Not Visited Yet" + str(notVisited))        
-        print("Potential Moves Added: " + str(potentialMoves))
         if (len(notVisited) == 0):
             move = potentialMoves[self.rand.randint(0,(len(potentialMoves)-1))]
             self.percept.setCurrentLocation(move)
@@ -448,7 +432,6 @@ class percept:
         else:
             self.percepts["right"]["coord"] = [self.percepts['current']['coord'][0],(self.percepts['current']['coord'][1]+1)]
             self.percepts["right"]["value"] = self.envArray[self.percepts['right']['coord'][0]][self.percepts['right']['coord'][1]]
-        print("Current Percept: " + str(self.percepts))
         
         
         
@@ -590,8 +573,6 @@ def main():
     #set up environment
     env = Environment()
     warehouse,ordered_items,shelfLocations = env.buildEnv()
-    env.print_grid(warehouse,ordered_items)
-    print(shelfLocations)
     
     
     #agentLocation starts at 0,0 in first episode
