@@ -10,7 +10,7 @@ class agentFunction:
     
     
     
-    def __init__(self, agentLocation, percept, customerOrder,actuator,randRange,basket):
+    def __init__(self, agentLocation, percept, customerOrder,actuator,randRange,basket,visited):
         self.location = agentLocation
         self.percept = percept
         self.order = customerOrder
@@ -18,6 +18,7 @@ class agentFunction:
         self.actuator = actuator
         self.random = randRange
         self.basket = basket
+        self.visited = visited
         #need to collect and check if an item has already been collected
         
     
@@ -25,8 +26,16 @@ class agentFunction:
         if (location not in self.orderShelfLocations):
             self.orderShelfLocations.append(location)
         
-    def removeShelfLocation(self):
-        self.orderShelfLocations.pop(0)
+    def removeShelfLocation(self,location):
+        loc = location.copy()
+        c = 0
+        d = -1
+        for i in self.orderShelfLocations:
+            if (i[0] == loc[0] and i[1] == loc[1]):
+                d = c
+            c = c + 1
+        if (d != -1):
+            self.orderShelfLocations.pop(d)
     
     def getCurrentShelfLocation(self):
         return self.currentShelf
@@ -35,7 +44,10 @@ class agentFunction:
         self.currentShelf = location
     #how to handle movement
     #have a current movement?
-    
+    def determineIfOnFakeShelf(self):
+        location = self.percept.getCurrentLocation()
+        if (self.percept.percepts['current']['value'] == -1):
+            self.removeShelfLocation(location)
 
     #Loads percepts and decides where to move
     
@@ -46,10 +58,11 @@ class agentFunction:
         #is agent on top of a Shelf?
         if (self.percept.onOrderShelf()):
             self.actuator.collectItem()
-            self.removeShelfLocation()
+            self.removeShelfLocation(self.percept.getCurrentLocation())
             self.currentShelf = ""
         print("shelf count: " + str(self.percept.shelfCount(self.basket.getCoords())))
         
+        self.determineIfOnFakeShelf()
         #Are there any shelves around me?
         if (self.percept.shelfCount(self.basket.getCoords()) == 0):
             
@@ -58,7 +71,7 @@ class agentFunction:
                 
                 #Random move
                 print("Random Move")
-                self.determineRandomMove()
+                self.bestMove(self.percept.getCurrentLocation())
             else:
                 
                 #Is there a current shelf I am targeting?
@@ -107,6 +120,7 @@ class agentFunction:
     
     def determineRandomMove(self):
         success = False
+        #add a best move function, determines if there are unvisited options and if not pick random
         while not success:
             move = self.random.randint(0,3)
             print(self.actuator.movePossible('left'))
@@ -127,8 +141,44 @@ class agentFunction:
                     self.actuator.down()
                     success = True
             
+    def bestMove(self,location):
         
+        moves = []
+        if (self.actuator.movePossible('left')):
+            left = location.copy()
+            left[1] = left[1]-1
+            if(not self.visited.hasVisited(left)):
+                   moves.append('left')
+        if (self.actuator.movePossible('right')):
+            right = location.copy()
+            right[1] = right[1]+1
+            if(not self.visited.hasVisited(right)):
+                   moves.append('right') 
+        if (self.actuator.movePossible('up')):
+            up = location.copy()
+            up[0] = up[0]-1
+            if(not self.visited.hasVisited(up)):
+                   moves.append('up')
+        if (self.actuator.movePossible('down')):
+            down = location.copy()
+            down[0] = down[0]+1
+            if(not self.visited.hasVisited(down)):
+                   moves.append('down')
         
+        if (len(moves) == 0):
+            self.determineRandomMove()
+        else:
+            bestMoveNum = self.random.randint(0,(len(moves)-1))
+            if (moves[bestMoveNum] == 'left'):
+                self.actuator.left()
+            elif (moves[bestMoveNum] == 'right'):
+                self.actuator.right()
+            elif (moves[bestMoveNum] == 'up'):
+                self.actuator.up()
+            elif (moves[bestMoveNum] == 'down'):
+                self.actuator.down()
+            else:
+                print("Error")
     #returns true if customer order is complete
     def hasCollectedAllItems(self):
         if (len(self.order) == len(self.basket.getBasket())):
@@ -342,13 +392,14 @@ class actuator:
         self.moveMem.addVisited(coord)
         
     def movePossible(self, move):
-        if move == 'left' and self.coord[1] == 0:
+        self.coord = self.percept.getCurrentLocation()
+        if move == 'left' and (self.coord[1]-1) < 0:
             return False
-        if move == 'right' and self.coord[1] ==5:
+        if move == 'right' and (self.coord[1]+1) > 5:
             return False
-        if move == 'up' and self.coord[0] ==0:
+        if move == 'up' and(self.coord[0]-1)  < 0:
             return False
-        if move == 'down' and self.coord[0] ==5:
+        if move == 'down' and (self.coord[0]+1) > 5:
             return False
         return True
 
@@ -546,14 +597,16 @@ def main():
     act = actuator(prcpt,currentCollected,shelfLocations,moveMem,rand)
     
     #initiate agent
-    agent = agentFunction(agentLocation, prcpt, ordered_items,act,rand,currentCollected)
+    agent = agentFunction(agentLocation, prcpt, ordered_items,act,rand,currentCollected,moveMem)
     count = 0
+    #need to purge fake list of visited when they visit the space
     while(not agent.hasCollectedAllItems()): 
         print("Current Location: " + str(prcpt.getCurrentLocation()))
         env.print_grid(warehouse,ordered_items)
         print(shelfLocations)
         agent.determineAction()
         prcpt.determine()
+        snsr.sensorRoll()
         count = count + 1
         
        
