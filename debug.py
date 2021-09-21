@@ -187,10 +187,11 @@ import random
 #Generates warehouse environment
 class Environment:
     
-    def __init__(self):
+    def __init__(self,envType):
         self.line_sep = '\n~~~~~~~~~~~~~~~~~~\n'
 
         #Define the environment
+        self.envType = envType
         self.environment_rows = 6
         self.environment_columns = 6
         self.item_A = 'A'
@@ -203,6 +204,13 @@ class Environment:
         self.item_H = 'H'
         self.item_I = 'I'
         self.item_J = 'J'
+        self.item_K = 'K'
+        self.item_M = 'M'
+        self.item_N = 'N'
+        self.item_O = 'O'
+        self.item_P = 'P'
+        self.item_Q = 'Q'
+        
         
     def print_grid(self,rewards,ordered_items):
         #print itemes ordered
@@ -221,8 +229,11 @@ class Environment:
     def genRandOrder(self):
         x = random.randint(1,10)
         #Give items their single character name
-        items = [self.item_A,self.item_B, self.item_C, self.item_D, self.item_E, self.item_F, self.item_G, self.item_H, self.item_I, self.item_J]
-        
+        if (self.envType == 1):
+            items = [self.item_A,self.item_B, self.item_C, self.item_D, self.item_E, self.item_F, self.item_G, self.item_H, self.item_I, self.item_J]
+        elif(self.envType == 2):
+            items = [self.item_A, self.item_B, self.item_C, self.item_D, self.item_E, self.item_F, self.item_G, self.item_H,
+                 self.item_I, self.item_J, self.item_K, self.item_M, self.item_N, self.item_O, self.item_P, self.item_Q]
         #Generate random orders containing items A-J
         ordered_items = random.sample(items,x)
         return ordered_items
@@ -233,66 +244,155 @@ class Environment:
         ordered_items = self.genRandOrder()
         shelfArray = np.full((self.environment_rows, self.environment_columns), "")
         
-        if self.item_A in ordered_items:
-                rewards [1,1] = 3
-                shelfArray[1,1] = 'A'
-        else:
-            rewards[1,1] = -1
-
-        if self.item_B in ordered_items:
-            rewards [2,2] = 3
-            shelfArray[2,2] = 'B'
-        else:
-            rewards[2,2] = -1
-
-        if self.item_C in ordered_items:
-            rewards [3,1] = 3
-            shelfArray[3,1] = 'C'
-        else:
-            rewards[3,1] = -1
-
-        if self.item_D in ordered_items:
-            rewards [0,2] = 3
-            shelfArray[0,2] = 'D'
-        else:
-            rewards[0,2] = -1
-
-        if self.item_E in ordered_items:
-            rewards [2,0] = 3
-            shelfArray[2,0] = 'E'
-        else:
-            rewards[2,0] = -1
-
-        if self.item_F in ordered_items:
-            rewards [4,2] = 3
-            shelfArray[4,2] = 'F'
-        else:
-            rewards[4,2] = -1
-            
-        if self.item_G in ordered_items:
-            rewards [1,4] = 3
-            shelfArray[1,4] = 'G'
-        else:
-            rewards[1,4] = -1
-
-        if self.item_H in ordered_items:
-            rewards [4,5] = 3
-            shelfArray[4,5] = 'H'
-        else:
-            rewards[4,5] = -1
-
-        if self.item_I in ordered_items:
-            rewards [2,4] = 3
-            shelfArray[2,4] = 'I'
-        else:
-            rewards[2,4] = -1
-            
-        if self.item_J in ordered_items:
-            rewards [5,3] = 3
-            shelfArray[5,3] = 'J'
-        else:
-            rewards[5,3] = -1
-        
+        if (self.envType == 1):
+            if self.item_A in ordered_items:
+                    rewards [1,1] = 3
+                    shelfArray[1,1] = 'A'
+            else:
+                rewards[1,1] = -1
+    
+            if self.item_B in ordered_items:
+                rewards [2,2] = 3
+                shelfArray[2,2] = 'B'
+            else:
+                rewards[2,2] = -1
+    
+            if self.item_C in ordered_items:
+                rewards [3,1] = 3
+                shelfArray[3,1] = 'C'
+            else:
+                rewards[3,1] = -1
+    
+            if self.item_D in ordered_items:
+                rewards [0,2] = 3
+                shelfArray[0,2] = 'D'
+            else:
+                rewards[0,2] = -1
+    
+            if self.item_E in ordered_items:
+                rewards [2,0] = 3
+                shelfArray[2,0] = 'E'
+            else:
+                rewards[2,0] = -1
+    
+            if self.item_F in ordered_items:
+                rewards [4,2] = 3
+                shelfArray[4,2] = 'F'
+            else:
+                rewards[4,2] = -1
+                
+            if self.item_G in ordered_items:
+                rewards [1,4] = 3
+                shelfArray[1,4] = 'G'
+            else:
+                rewards[1,4] = -1
+    
+            if self.item_H in ordered_items:
+                rewards [4,5] = 3
+                shelfArray[4,5] = 'H'
+            else:
+                rewards[4,5] = -1
+    
+            if self.item_I in ordered_items:
+                rewards [2,4] = 3
+                shelfArray[2,4] = 'I'
+            else:
+                rewards[2,4] = -1
+                
+            if self.item_J in ordered_items:
+                rewards [5,3] = 3
+                shelfArray[5,3] = 'J'
+            else:
+                rewards[5,3] = -1
+        elif (self.envType == 2):
+            if self.item_A in ordered_items:
+                    rewards [0, 2] = 3
+                    shelfArray[0, 2] = 'A'
+            else:
+                rewards[0, 2] = -1
+    
+            if self.item_B in ordered_items:
+                rewards [1, 2] = 3
+                shelfArray[1, 2] = 'B'
+            else:
+                rewards[1, 2] = -1
+    
+            if self.item_C in ordered_items:
+                rewards [3,0] = 3
+                shelfArray[3,0] = 'C'
+            else:
+                rewards[3,0] = -1
+    
+            if self.item_D in ordered_items:
+                rewards [1, 0] = 3
+                shelfArray[1, 0] = 'D'
+            else:
+                rewards[1, 0] = -1
+    
+            if self.item_E in ordered_items:
+                rewards [2, 0] = 3
+                shelfArray[2, 0] = 'E'
+            else:
+                rewards[2, 0] = -1
+    
+            if self.item_F in ordered_items:
+                rewards [2, 2] = 3
+                shelfArray[2, 2] = 'F'
+            else:
+                rewards[2, 2] = -1
+                
+            if self.item_G in ordered_items:
+                rewards [4, 0] = 3
+                shelfArray[4, 0] = 'G'
+            else:
+                rewards[4, 0] = -1
+    
+            if self.item_H in ordered_items:
+                rewards [3, 2] = 3
+                shelfArray[3, 2] = 'H'
+            else:
+                rewards[3, 2] = -1
+    
+            if self.item_I in ordered_items:
+                rewards [5, 0] = 3
+                shelfArray[5, 0] = 'I'
+            else:
+                rewards[5, 0] = -1
+            if self.item_J in ordered_items:
+                rewards [4, 2] = 3
+                shelfArray[4, 2] = 'J'
+            else:
+                rewards[4, 2] = -1
+            if self.item_K in ordered_items:
+                rewards [2, 4] = 3
+                shelfArray[2, 4] = 'K'
+            else:
+                rewards[2, 4] = -1
+            if self.item_M in ordered_items:
+                rewards [1, 4] = 3
+                shelfArray[1, 4] = 'M'
+            else:
+                rewards[1, 4] = -1
+            if self.item_N in ordered_items:
+                rewards [5, 4] = 3
+                shelfArray[5, 4] = 'N'
+            else:
+                rewards[5, 4] = -1
+            if self.item_O in ordered_items:
+                rewards [3, 5] = 3
+                shelfArray[3, 5] = 'O'
+            else:
+                rewards[3, 5] = -1
+            if self.item_P in ordered_items:
+                rewards [0, 4] = 3
+                shelfArray[0, 4] = 'P'
+            else:
+                rewards[0, 4] = -1
+            if self.item_Q in ordered_items:
+                rewards [4, 5] = 3
+                shelfArray[4, 5] = 'Q'
+            else:
+                rewards[4, 5] = -1
         return rewards,ordered_items,shelfArray
 
     #need to build random layout case after static shelf testing to make sure agen works in any shelf situation.
@@ -577,9 +677,11 @@ def main():
     shortestPath = 0
     shoretestPathScore = 0
     
+    #Change Environment to 2 in order to show it works with multiple shelf configurations.
+    envType = 2
     for i in range(1000):
         #set up environment
-        env = Environment()
+        env = Environment(envType)
         warehouse,ordered_items,shelfLocations = env.buildEnv()
     
         #set up percept
