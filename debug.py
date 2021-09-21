@@ -178,7 +178,6 @@ class agentFunction:
     #returns true if customer order is complete
     def hasCollectedAllItems(self):
         if (len(self.order) == len(self.basket.getBasket())):
-            print("WIN!: " + str(self.basket.getBasket()))
             return True
         return False
  
@@ -570,50 +569,77 @@ import random as rand
 #main function
 def main():
     
-    #set up environment
-    env = Environment()
-    warehouse,ordered_items,shelfLocations = env.buildEnv()
-    
-    
     #agentLocation starts at 0,0 in first episode
-    
-    #set up percept
     agentLocation = [0,0]
-    prcpt = percept(agentLocation,warehouse)
+    totalscore = 0
+    longestPath = 0
+    longestPathScore = 0
+    shortestPath = 0
+    shoretestPathScore = 0
     
-    #determine surrounding tiles
-    prcpt.determine()
-    score = stats(warehouse,prcpt)
-    score.updateScore()
-    score.updatePath(agentLocation)
+    for i in range(1000):
+        #set up environment
+        env = Environment()
+        warehouse,ordered_items,shelfLocations = env.buildEnv()
     
-    #Roll for sensor Accuracy
-    snsr = sensor(rand, agentLocation, prcpt)
-    snsr.sensorRoll()
+        #set up percept
+        prcpt = percept(agentLocation,warehouse)
     
-    #initiate empty basket of items
-    currentCollected = basket()
-    
-    #initiate new movement memory
-    moveMem = movementMemory()
-    
-    moveMem.addVisited(agentLocation)
-    
-    #initiate acutuator
-    act = actuator(prcpt,currentCollected,shelfLocations,moveMem,rand)
-    
-    #initiate agent
-    agent = agentFunction(agentLocation, prcpt, ordered_items,act,rand,currentCollected,moveMem)
-    #need to purge fake list of visited when they visit the space
-    while(not agent.hasCollectedAllItems()): 
-        agent.determineAction()
+        #determine surrounding tiles
         prcpt.determine()
+        
+        #create episode score
+        score = stats(warehouse,prcpt)
         score.updateScore()
-        score.updatePath(prcpt.getCurrentLocation().copy())
+        score.updatePath(agentLocation)
+    
+        #Create sensor and do first sensor roll
+        snsr = sensor(rand, agentLocation, prcpt)
         snsr.sensorRoll()
     
-    score.printScore()
-    print(score.getPath())
+        #initiate empty basket of items
+        currentCollected = basket()
+    
+        #initiate new movement memory
+        moveMem = movementMemory()
+        
+        #add first location to visited
+        moveMem.addVisited(agentLocation)
+    
+        #initialize acutuator
+        act = actuator(prcpt,currentCollected,shelfLocations,moveMem,rand)
+    
+        #initiate agent
+        agent = agentFunction(agentLocation, prcpt, ordered_items,act,rand,currentCollected,moveMem)
+    
+        while(not agent.hasCollectedAllItems()): 
+            agent.determineAction()
+            prcpt.determine()
+            score.updateScore()
+            score.updatePath(prcpt.getCurrentLocation().copy())
+            snsr.sensorRoll()
+    
+        
+        
+        #update last agent location
+        agentLocation = prcpt.getCurrentLocation().copy()
+        totalscore = totalscore + score.getScore().copy()
+        
+        if (shortestPath == 0):
+            shortestPath = len(score.getPath().copy())
+            shoretestPathScore = score.getScore().copy()
+        elif(shortestPath > len(score.getPath().copy())):
+            shortestPath = len(score.getPath().copy())
+            shoretestPathScore = score.getScore().copy()
+        if (longestPath < len(score.getPath().copy())):
+            longestPath = len(score.getPath().copy())
+            longestPathScore = score.getScore().copy()
+    
+    avgscore = totalscore / 100
+    
+    print("Average Score: " + str(avgscore))
+    print("Longest Path: " + str(longestPath) + " Score: " + str(longestPathScore))
+    print("Shortest Path: " + str(shortestPath) + " Score: " + str(shoretestPathScore))
         
        
     
